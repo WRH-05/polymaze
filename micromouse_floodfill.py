@@ -17,6 +17,9 @@ class API:
         """Send a query command and return the response"""
         print(cmd, flush=True)
         response = input().strip()
+        # Handle case where simulator sends acknowledgments
+        while response in ['ack', 'reset']:
+            response = input().strip()
         return response
     
     @staticmethod
@@ -322,7 +325,37 @@ class MicromouseFloodfill:
             if API.wasReset():
                 self.log("Reset detected!")
                 API.ackReset()
-                self.__init__()
+                # Reinitialize everything after reset
+                self.x = 0
+                self.y = 0
+                self.direction = 0
+                self.phase = "explore"
+                self.visited = set()
+                self.visited.add((0, 0))
+                self.walls = [[0 for _ in range(self.height)] for _ in range(self.width)]
+                self.initialize_boundaries()
+                
+                # Set goal positions back to center
+                center_x = self.width // 2
+                center_y = self.height // 2
+                if self.width % 2 == 0 and self.height % 2 == 0:
+                    self.goals = [(center_x-1, center_y-1), (center_x, center_y-1), 
+                                 (center_x-1, center_y), (center_x, center_y)]
+                elif self.width % 2 == 0:
+                    self.goals = [(center_x-1, center_y), (center_x, center_y)]
+                elif self.height % 2 == 0:
+                    self.goals = [(center_x, center_y-1), (center_x, center_y)]
+                else:
+                    self.goals = [(center_x, center_y)]
+                
+                # Clear display and restart
+                API.clearAllColor()
+                API.clearAllText()
+                API.setColor(0, 0, 'G')  # Mark start position
+                for goal_x, goal_y in self.goals:
+                    API.setColor(goal_x, goal_y, 'R')
+                
+                self.log("Reset complete, restarting algorithm")
                 continue
             
             # Scan current position
